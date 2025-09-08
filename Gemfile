@@ -18,7 +18,7 @@ gem "stimulus-rails"
 gem "jbuilder"
 
 # OpenAI integration
-gem "ruby-openai", "~> 3.7"
+gem "ruby-openai", "~> 8.3"
 
 # Token counting for OpenAI models
 gem "tiktoken_ruby"
