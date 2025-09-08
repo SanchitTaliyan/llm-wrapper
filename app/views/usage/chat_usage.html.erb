@@ -1,0 +1,247 @@
+<div class="usage-dashboard">
+  <h1>Chat Usage Details</h1>
+  
+  <div class="back-link">
+    <%= link_to "← Back to Usage Dashboard", usage_index_path, class: "button secondary" %>
+    <%= link_to "View Chat", chat_path(@chat_usage[:chat_id]), class: "button" %>
+  </div>
+  
+  <div class="chat-info">
+    <h2><%= @chat_usage[:title] || "Chat ##{@chat_usage[:chat_id]}" %></h2>
+    <p class="chat-meta">
+      Chat ID: <%= @chat_usage[:chat_id] %> | 
+      Created: <%= @chat_usage[:created_at].strftime("%m/%d/%Y %I:%M %p") %> | 
+      Last Activity: <%= @chat_usage[:last_activity].strftime("%m/%d/%Y %I:%M %p") %>
+    </p>
+  </div>
+  
+  <div class="overview-stats">
+    <div class="stat-card">
+      <h3>Total Messages</h3>
+      <p class="stat-value"><%= @chat_usage[:total_messages] %></p>
+    </div>
+    
+    <div class="stat-card">
+      <h3>Total Tokens</h3>
+      <p class="stat-value"><%= number_with_delimiter(@chat_usage[:total_tokens]) %></p>
+    </div>
+    
+    <div class="stat-card">
+      <h3>Model Used</h3>
+      <p class="stat-value model-name"><%= @chat_usage[:model_used] %></p>
+    </div>
+    
+    <div class="stat-card">
+      <h3>Estimated Cost</h3>
+      <p class="stat-value">$<%= sprintf('%.4f', @chat_usage[:cost_estimate][:total_cost]) %></p>
+    </div>
+  </div>
+  
+  <div class="detailed-stats">
+    <div class="section">
+      <h2>Token Breakdown</h2>
+      <ul>
+        <li><strong>Input Tokens:</strong> <%= number_with_delimiter(@chat_usage[:total_input_tokens]) %></li>
+        <li><strong>Output Tokens:</strong> <%= number_with_delimiter(@chat_usage[:total_output_tokens]) %></li>
+        <li><strong>Total Tokens:</strong> <%= number_with_delimiter(@chat_usage[:total_tokens]) %></li>
+        <li><strong>Avg Tokens/Message:</strong> <%= @chat_usage[:total_messages] > 0 ? (@chat_usage[:total_tokens] / @chat_usage[:total_messages]).round(1) : 0 %></li>
+      </ul>
+    </div>
+    
+    <div class="section">
+      <h2>Cost Breakdown</h2>
+      <ul>
+        <li><strong>Input Cost:</strong> $<%= sprintf('%.4f', @chat_usage[:cost_estimate][:input_cost]) %></li>
+        <li><strong>Output Cost:</strong> $<%= sprintf('%.4f', @chat_usage[:cost_estimate][:output_cost]) %></li>
+        <li><strong>Total Cost:</strong> $<%= sprintf('%.4f', @chat_usage[:cost_estimate][:total_cost]) %></li>
+      </ul>
+    </div>
+    
+    <div class="section">
+      <h2>Token Limits</h2>
+      <ul>
+        <li><strong>Model:</strong> <%= @chat_usage[:token_limits][:model] %></li>
+        <li><strong>Token Limit:</strong> <%= number_with_delimiter(@chat_usage[:token_limits][:token_limit]) %></li>
+        <li><strong>Available for History:</strong> <%= number_with_delimiter(@chat_usage[:token_limits][:available_for_history]) %></li>
+        <li><strong>Current Usage:</strong> <%= number_with_delimiter(@chat_usage[:token_limits][:current_usage]) %></li>
+        <li><strong>Within Limit:</strong> 
+          <span class="<%= @chat_usage[:token_limits][:within_limit] ? 'status-good' : 'status-bad' %>">
+            <%= @chat_usage[:token_limits][:within_limit] ? 'Yes' : 'No' %>
+          </span>
+        </li>
+      </ul>
+    </div>
+    
+    <div class="section">
+      <h2>Usage Timeline</h2>
+      <ul>
+        <li><strong>Daily Usage:</strong> <%= number_with_delimiter(@chat_usage[:daily_usage]) %> tokens</li>
+        <li><strong>Monthly Usage:</strong> <%= number_with_delimiter(@chat_usage[:monthly_usage]) %> tokens</li>
+        <li><strong>Messages (Total):</strong> <%= @chat_usage[:token_limits][:messages_count] %></li>
+        <li><strong>Messages (In Context):</strong> <%= @chat_usage[:token_limits][:trimmed_messages_count] %></li>
+      </ul>
+    </div>
+  </div>
+  
+  <% if @chat_usage[:token_limits][:trimmed_messages_count] < @chat_usage[:token_limits][:messages_count] %>
+    <div class="warning-section">
+      <h3>⚠️ Context Trimming Active</h3>
+      <p>
+        This chat has <%= @chat_usage[:token_limits][:messages_count] %> total messages, but only 
+        <%= @chat_usage[:token_limits][:trimmed_messages_count] %> are being sent to the AI due to token limits.
+        Older messages are automatically trimmed to stay within the model's context window.
+      </p>
+    </div>
+  <% end %>
+</div>
+
+<style>
+.usage-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.back-link {
+  margin-bottom: 20px;
+}
+
+.chat-info {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.chat-info h2 {
+  color: #495057;
+  margin-bottom: 10px;
+}
+
+.chat-meta {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card h3 {
+  margin: 0 0 10px 0;
+  color: #495057;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+  margin: 0;
+}
+
+.stat-value.model-name {
+  font-size: 16px;
+  font-family: monospace;
+  background: #e9ecef;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.detailed-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.section {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.section h2 {
+  margin-top: 0;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 10px;
+}
+
+.section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.section li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.status-good {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-bad {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.warning-section {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.warning-section h3 {
+  color: #856404;
+  margin-top: 0;
+}
+
+.warning-section p {
+  color: #856404;
+  margin-bottom: 0;
+}
+
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 0 10px;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background: #0056b3;
+}
+
+.button.secondary {
+  background: #6c757d;
+}
+
+.button.secondary:hover {
+  background: #545b62;
+}
+</style>

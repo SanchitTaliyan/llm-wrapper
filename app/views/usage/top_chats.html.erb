@@ -1,0 +1,159 @@
+<div class="usage-dashboard">
+  <h1>Top Chats by Token Usage</h1>
+  
+  <div class="back-link">
+    <%= link_to "← Back to Usage Dashboard", usage_index_path, class: "button secondary" %>
+  </div>
+  
+  <% if @top_chats.any? %>
+    <div class="top-chats-list">
+      <% @top_chats.each_with_index do |chat, index| %>
+        <div class="chat-card">
+          <div class="chat-header">
+            <h3>#<%= index + 1 %>. <%= chat[:title] %></h3>
+            <span class="chat-id">Chat ID: <%= chat[:id] %></span>
+          </div>
+          
+          <div class="chat-stats">
+            <div class="stat">
+              <strong>Total Tokens:</strong> 
+              <%= number_with_delimiter(chat[:total_tokens]) %>
+            </div>
+            <div class="stat">
+              <strong>Input Tokens:</strong> 
+              <%= number_with_delimiter(chat[:total_input_tokens]) %>
+            </div>
+            <div class="stat">
+              <strong>Output Tokens:</strong> 
+              <%= number_with_delimiter(chat[:total_output_tokens]) %>
+            </div>
+            <div class="stat">
+              <strong>Messages:</strong> 
+              <%= chat[:messages_count] %>
+            </div>
+            <div class="stat">
+              <strong>Model:</strong> 
+              <%= chat[:model_used] %>
+            </div>
+            <div class="stat">
+              <strong>Estimated Cost:</strong> 
+              $<%= sprintf('%.4f', chat[:cost_estimate][:total_cost]) %>
+            </div>
+          </div>
+          
+          <div class="chat-footer">
+            <small>
+              Created: <%= chat[:created_at].strftime("%m/%d/%Y %I:%M %p") %> | 
+              Last Activity: <%= chat[:last_activity].strftime("%m/%d/%Y %I:%M %p") %>
+            </small>
+            <%= link_to "View Chat", chat_path(chat[:id]), class: "button small" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="no-data">
+      <p>No chat usage data available.</p>
+    </div>
+  <% end %>
+</div>
+
+<style>
+.usage-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.back-link {
+  margin-bottom: 30px;
+}
+
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background: #0056b3;
+}
+
+.button.secondary {
+  background: #6c757d;
+}
+
+.button.secondary:hover {
+  background: #545b62;
+}
+
+.button.small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.top-chats-list {
+  display: grid;
+  gap: 20px;
+}
+
+.chat-card {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.chat-header h3 {
+  margin: 0;
+  color: #495057;
+}
+
+.chat-id {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.chat-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.stat {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.chat-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  color: #6c757d;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+}
+</style>

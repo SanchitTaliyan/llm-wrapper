@@ -1,0 +1,197 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+      <%= link_to "← Back to Chats", chats_path, class: "text-blue-600 hover:text-blue-800 mb-2 inline-block", data: { turbo: false } %>
+      <h1 class="text-3xl font-bold text-gray-900">
+        <%= @chat.title.present? ? @chat.title : "Chat ##{@chat.id}" %>
+      </h1>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="border border-gray-200 rounded-lg mb-6">
+      <div id="messages-container" class="p-4 max-h-96 overflow-y-auto space-y-4">
+        <% @chat.messages.ordered.each do |message| %>
+          <div class="message <%= message.role == 'user' ? 'user-message' : 'assistant-message' %>">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold <%= message.role == 'user' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800' %>">
+                <%= message.role == 'user' ? 'U' : 'AI' %>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs text-gray-500 mb-1"><%= message.role.capitalize %></div>
+                <div class="prose prose-sm max-w-none">
+                  <%= simple_format(message.content) %>
+                </div>
+                <div class="text-xs text-gray-400 mt-2"><%= time_ago_in_words(message.created_at) %> ago</div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <% if @chat.messages.empty? %>
+          <div class="text-center py-8">
+            <p class="text-gray-600">No messages yet. Start the conversation below!</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="border border-gray-200 rounded-lg p-4">
+      <form id="message-form" class="space-y-4">
+        <div>
+          <textarea 
+            id="message-content" 
+            name="content" 
+            rows="3" 
+            placeholder="Type your message here..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            required
+          ></textarea>
+        </div>
+        <div class="flex justify-between items-center">
+          <div class="text-xs text-gray-500">
+            Press Enter to send (Shift+Enter for new line)
+          </div>
+          <button 
+            type="submit" 
+            id="send-button"
+            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Send
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Remove any existing listeners
+document.removeEventListener('turbo:load', setupMessageHandler);
+
+function setupMessageHandler() {
+  const messageForm = document.getElementById('message-form');
+  const messageContent = document.getElementById('message-content');
+  const sendButton = document.getElementById('send-button');
+  const messagesContainer = document.getElementById('messages-container');
+  
+  if (!messageForm || !messageContent || !sendButton || !messagesContainer) {
+    return;
+  }
+  
+  // Remove existing listeners if any
+  messageForm.removeEventListener('submit', handleMessageSubmit);
+  messageContent.removeEventListener('keydown', handleKeyDown);
+  
+  // Add new listeners
+  messageForm.addEventListener('submit', handleMessageSubmit);
+  messageContent.addEventListener('keydown', handleKeyDown);
+  
+  // Initial scroll to bottom
+  scrollToBottom();
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('message-form').dispatchEvent(new Event('submit'));
+  }
+}
+
+function handleMessageSubmit(e) {
+  e.preventDefault();
+  
+  const messageContent = document.getElementById('message-content');
+  const sendButton = document.getElementById('send-button');
+  const messagesContainer = document.getElementById('messages-container');
+  
+  const content = messageContent.value.trim();
+  if (!content) return;
+
+  setLoading(true);
+  
+  // Add user message immediately
+  addMessage(content, 'user', new Date());
+  messageContent.value = '';
+
+  fetch(`/chats/<%= @chat.id %>/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ message: { content: content } })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.ai_message) {
+      addMessage(data.ai_message.content, 'assistant', data.ai_message.created_at);
+    } else if (data.error) {
+      addMessage('Error: ' + data.error, 'assistant', new Date());
+    }
+    setLoading(false);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    addMessage('Sorry, there was an error sending your message. Please try again.', 'assistant', new Date());
+    setLoading(false);
+  });
+}
+
+function scrollToBottom() {
+  const messagesContainer = document.getElementById('messages-container');
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+}
+
+function addMessage(content, role, timestamp) {
+  const messagesContainer = document.getElementById('messages-container');
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${role === 'user' ? 'user-message' : 'assistant-message'}`;
+  
+  const timeAgo = new Date(timestamp).toLocaleTimeString();
+  
+  messageDiv.innerHTML = `
+    <div class="flex items-start gap-3">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${role === 'user' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
+        ${role === 'user' ? 'U' : 'AI'}
+      </div>
+      <div class="flex-1">
+        <div class="text-xs text-gray-500 mb-1">${role.charAt(0).toUpperCase() + role.slice(1)}</div>
+        <div class="prose prose-sm max-w-none">
+          <p>${content.replace(/\n/g, '<br>')}</p>
+        </div>
+        <div class="text-xs text-gray-400 mt-2">just now</div>
+      </div>
+    </div>
+  `;
+  
+  messagesContainer.appendChild(messageDiv);
+  scrollToBottom();
+}
+
+function setLoading(loading) {
+  const sendButton = document.getElementById('send-button');
+  const messageContent = document.getElementById('message-content');
+  
+  if (sendButton && messageContent) {
+    sendButton.disabled = loading;
+    sendButton.textContent = loading ? 'Sending...' : 'Send';
+    messageContent.disabled = loading;
+  }
+}
+
+// Set up event listeners
+document.addEventListener('DOMContentLoaded', setupMessageHandler);
+document.addEventListener('turbo:load', setupMessageHandler);
+document.addEventListener('turbo:render', setupMessageHandler);
+
+// Immediate execution
+setupMessageHandler();
+</script>
+
+<style>
+  .container { max-width: 1200px; }
+  .prose p:last-child { margin-bottom: 0; }
+</style>

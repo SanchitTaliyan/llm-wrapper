@@ -1,0 +1,107 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="mb-8">
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-3xl font-bold text-gray-900">ChatGPT Wrapper</h1>
+        <a href="/usage" class="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-500 border border-blue-300 hover:border-blue-500 rounded-md">
+          📊 Usage Stats
+        </a>
+      </div>
+      
+      <!-- New Chat Button -->
+      <%= form_with model: Chat.new, local: true, class: "mb-6", id: "new-chat-form", data: { turbo: false } do |form| %>
+        <div class="flex gap-2">
+          <%= form.text_field :title, placeholder: "Enter chat title (optional)", class: "flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+          <%= form.submit "New Chat", class: "px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Chat List -->
+    <div class="grid gap-4" id="chat-list">
+      <% @chats.each do |chat| %>
+        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="text-lg font-semibold text-gray-900">
+              <%= link_to chat.title.present? ? chat.title : "Chat ##{chat.id}", chat_path(chat), class: "hover:text-blue-600" %>
+            </h3>
+            <span class="text-sm text-gray-500"><%= time_ago_in_words(chat.updated_at) %> ago</span>
+          </div>
+          <% if chat.last_message %>
+            <p class="text-gray-600 text-sm truncate">
+              <strong><%= chat.last_message.role.capitalize %>:</strong>
+              <%= chat.last_message.content %>
+            </p>
+          <% end %>
+          <div class="mt-2 text-xs text-gray-500">
+            <%= pluralize(chat.messages.count, 'message') %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @chats.empty? %>
+        <div class="text-center py-8">
+          <p class="text-gray-600">No chats yet. Create your first chat above!</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+// Remove any existing listeners
+document.removeEventListener('turbo:load', setupFormHandler);
+
+function setupFormHandler() {
+  const newChatForm = document.getElementById('new-chat-form');
+  
+  if (!newChatForm) {
+    return;
+  }
+  
+  // Remove existing listener if any
+  newChatForm.removeEventListener('submit', handleFormSubmit);
+  
+  // Add new listener
+  newChatForm.addEventListener('submit', handleFormSubmit);
+}
+
+function handleFormSubmit(e) {
+  e.preventDefault();
+  
+  const formData = new FormData(this);
+  const title = formData.get('chat[title]') || `Chat ${new Date().toLocaleString()}`;
+  
+  fetch('<%= chats_path %>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+    },
+    body: JSON.stringify({ chat: { title: title } })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.id) {
+      window.location.href = `/chats/${data.id}`;
+    } else {
+      alert('Error creating chat: ' + (data.errors ? JSON.stringify(data.errors) : 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    alert('Error creating chat: ' + error.message);
+  });
+}
+
+// Set up event listeners
+document.addEventListener('DOMContentLoaded', setupFormHandler);
+document.addEventListener('turbo:load', setupFormHandler);
+document.addEventListener('turbo:render', setupFormHandler);
+
+// Immediate execution
+setupFormHandler();
+</script>
+
+<style>
+  .container { max-width: 1200px; }
+</style>
