@@ -23,7 +23,7 @@ A minimal chat application that wraps OpenAI's ChatGPT API, built with Ruby on R
 ### 1. Clone and Install Dependencies
 
 ```bash
-cd littlebird_bot
+cd llm-wrapper
 bundle install
 ```
 
