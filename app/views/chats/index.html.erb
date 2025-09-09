@@ -20,17 +20,17 @@
     <!-- Chat List -->
     <div class="grid gap-4" id="chat-list">
       <% @chats.each do |chat| %>
-        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="text-lg font-semibold text-gray-900">
-              <%= link_to chat.title.present? ? chat.title : "Chat ##{chat.id}", chat_path(chat), class: "hover:text-blue-600" %>
+        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow w-full min-w-0">
+          <div class="flex justify-between items-start mb-2 min-w-0">
+            <h3 class="text-lg font-semibold text-gray-900 truncate flex-1 min-w-0 mr-2">
+              <%= link_to chat.title.present? ? chat.title : "Chat ##{chat.id}", chat_path(chat), class: "hover:text-blue-600 truncate block" %>
             </h3>
-            <span class="text-sm text-gray-500"><%= time_ago_in_words(chat.updated_at) %> ago</span>
+            <span class="text-sm text-gray-500 flex-shrink-0"><%= time_ago_in_words(chat.updated_at) %> ago</span>
           </div>
           <% if chat.last_message %>
-            <p class="text-gray-600 text-sm truncate">
+            <p class="text-gray-600 text-sm break-words overflow-hidden">
               <strong><%= chat.last_message.role.capitalize %>:</strong>
-              <%= chat.last_message.content %>
+              <span class="truncate block"><%= chat.last_message.content %></span>
             </p>
           <% end %>
           <div class="mt-2 text-xs text-gray-500">
@@ -104,4 +104,23 @@ setupFormHandler();
 
 <style>
   .container { max-width: 1200px; }
+  
+  /* Ensure proper text wrapping and prevent horizontal overflow */
+  #chat-list .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Ensure chat items don't exceed container width */
+  #chat-list > div {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Prevent long URLs or code from breaking layout */
+  #chat-list p {
+    max-width: 100%;
+    overflow: hidden;
+  }
 </style>
