@@ -1,56 +1,38 @@
 class ChatsController < ApplicationController
+  include ErrorHandler
+  
   before_action :find_chat, only: [:show]
 
   def index
-    @chats = Chat.recent.includes(:messages)
+    chats = ChatService.list_chats
     
     respond_to do |format|
-      format.html
-      format.json {
-        render json: @chats.as_json(
-          include: {
-            messages: {
-              only: [:id, :content, :role, :created_at]
-            }
-          },
-          methods: [:last_message]
-        )
-      }
+      format.html { @chats = chats }
+      format.json { render json: ChatService.serialize_for_index(chats) }
     end
   end
 
   def show
     respond_to do |format|
       format.html
-      format.json {
-        render json: @chat.as_json(
-          include: {
-            messages: {
-              only: [:id, :content, :role, :created_at],
-              order: :created_at
-            }
-          }
-        )
-      }
+      format.json { render json: ChatService.serialize_for_show(@chat) }
     end
   end
 
   def create
-    @chat = Chat.new(chat_params)
+    result = ChatService.create_chat(chat_params)
     
-    if @chat.save
-      render json: @chat, status: :created
+    if result[:success]
+      render json: ChatService.serialize_for_create(result[:chat]), status: :created
     else
-      render json: { errors: @chat.errors }, status: :unprocessable_entity
+      render_validation_errors(result[:chat])
     end
   end
 
   private
 
   def find_chat
-    @chat = Chat.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Chat not found' }, status: :not_found
+    @chat = ChatService.find_chat(params[:id])
   end
 
   def chat_params
