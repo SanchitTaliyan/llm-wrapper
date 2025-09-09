@@ -13,7 +13,6 @@ class ChatService
     def list_chats(options = {})
       chats = Chat.recent.includes(:messages)
       
-      # Apply any filtering options here if needed in the future
       if options[:limit]
         chats = chats.limit(options[:limit])
       end
